@@ -25,7 +25,6 @@ import * as path from 'path';
 import { PCA } from 'ml-pca';
 
 // Assuming your CIFAR-10 data is loaded
-
 interface ImageContribution {
   contributor: string;
   data: CifarImage[];
@@ -38,17 +37,17 @@ interface CifarImage {
 
 // Individual contribution of one user to the dataset
 interface DataContribution {
-  id: string;
-  contributor: string;
-  datasetId: string;
-  dataHash: string;
-  contributionAmount: number;
-  variance: number;
+  id: string; // bytes32
+  contributor: string; // address
+  datasetId: string; // bytes32
+  dataHash: string; // bytes32
+  contributionAmount: number; // number
+  variance: number; // number
 }
 
 // Dataset information (joint contributions of all users)
 interface DatasetInfo {
-  id: string;
+  id: string; // bytes32
   dataContributions: DataContribution[];
 }
 
@@ -73,7 +72,7 @@ export class IDatasetInfoApiVerifierService extends BaseVerifierService<
     logger.log('IDatasetInfoVerifierService: verifyRequest');
 
     const url = fixedRequest.requestBody.url;
-    const abiSign = JSON.parse(fixedRequest.requestBody.abi_signature);
+    // const abiSign = JSON.parse(fixedRequest.requestBody.abi_signature);
 
     const result = new AttestationResponse<IDatasetInfoApi_Response>();
 
@@ -90,42 +89,80 @@ export class IDatasetInfoApiVerifierService extends BaseVerifierService<
     console.log('dataset: ', dataContributions);
     const datasetInfo = this._processDatasetInfo(dataContributions);
 
-    console.log(datasetInfo);
+    const abiSign = {
+      components: [
+        {
+          name: 'id',
+          type: 'bytes32',
+        },
+        {
+          name: 'dataContributions',
+          type: 'tuple[]',
+          components: [
+            {
+              name: 'id',
+              type: 'bytes32',
+            },
+            {
+              name: 'contributor',
+              type: 'address',
+            },
+            {
+              name: 'datasetId',
+              type: 'bytes32',
+            },
+            {
+              name: 'dataHash',
+              type: 'bytes32',
+            },
+            {
+              name: 'contributionAmount',
+              type: 'uint256',
+            },
+            {
+              name: 'variance',
+              type: 'uint256',
+            },
+          ],
+        },
+      ],
+      type: 'tuple',
+    };
 
-    // // encode info
-    // const web3 = new Web3();
-    // const encodedResult = web3.eth.abi.encodeParameter(abiSign, datasetInfo);
+    // encode info
+    const web3 = new Web3();
+    const encodedResult = web3.eth.abi.encodeParameter(abiSign, datasetInfo);
 
-    // const encodedResult = '0x1234567890'; // dummy data
+    console.log(encodedResult);
 
-    // // construct correct data types
-    // const responseBodyParams: Required<IDatasetInfoApi_ResponseBody> = {
-    //   abi_encoded_data: encodedResult,
-    // };
-    // const responseBodyObj = new IDatasetInfoApi_ResponseBody(
-    //   responseBodyParams,
-    // );
+    // construct correct data types
+    const responseBodyParams: Required<IDatasetInfoApi_ResponseBody> = {
+      abi_encoded_data: encodedResult,
+    };
+    const responseBodyObj = new IDatasetInfoApi_ResponseBody(
+      responseBodyParams,
+    );
 
-    // const attResponseParams: Required<IDatasetInfoApi_Response> = {
-    //   attestationType: fixedRequest.attestationType,
-    //   sourceId: fixedRequest.sourceId,
-    //   votingRound: '0',
-    //   lowestUsedTimestamp: '0xffffffffffffffff', // Irrelevant for this attestation type
-    //   requestBody: fixedRequest.requestBody,
-    //   responseBody: responseBodyObj,
-    // };
-    // const attResponse = new IDatasetInfoApi_Response(attResponseParams);
+    const attResponseParams: Required<IDatasetInfoApi_Response> = {
+      attestationType: fixedRequest.attestationType,
+      sourceId: fixedRequest.sourceId,
+      votingRound: '0',
+      lowestUsedTimestamp: '0xffffffffffffffff', // Irrelevant for this attestation type
+      requestBody: fixedRequest.requestBody,
+      responseBody: responseBodyObj,
+    };
+    const attResponse = new IDatasetInfoApi_Response(attResponseParams);
 
-    // // console.log('attResponse: ', attResponse);
+    console.log('attResponse: ', attResponse);
 
-    // // construct final result
-    // result.response = attResponse;
-    // result.status = AttestationResponseStatus.VALID;
+    // construct final result
+    result.response = attResponse;
+    result.status = AttestationResponseStatus.VALID;
     return result;
   }
 
   protected _processDatasetInfo(dataset: ImageContribution[]) {
-    const datasetId = Math.random().toString(16).substring(12);
+    const datasetId = '0x' + Math.random().toString(16).substring(12);
 
     const dataContributions: DataContribution[] = [];
 
@@ -139,9 +176,9 @@ export class IDatasetInfoApiVerifierService extends BaseVerifierService<
       console.log(variance);
 
       // Note: This is just a random string
-      const dataHash = Math.random().toString(16).substring(12);
+      const dataHash = '0x' + Math.random().toString(16).substring(12);
 
-      const contributionId = Math.random().toString(16).substring(12);
+      const contributionId = '0x' + Math.random().toString(16).substring(12);
       const dataContribution: DataContribution = {
         id: contributionId,
         contributor,

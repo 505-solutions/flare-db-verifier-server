@@ -12,6 +12,7 @@ struct DataContribution {
     bytes32 datasetId;
     bytes32 dataHash;
     uint256 contributionAmount;
+    uint256 variance;
 }
 
 // Dataset information (joint contributions of all users)
