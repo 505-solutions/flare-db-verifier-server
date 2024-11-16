@@ -5,6 +5,8 @@ import "./interfaces/IDatasetInfoApi.sol";
 import "./generated/interfaces/verification/IDatasetInfoApiVerification.sol";
 import "./generated/implementation/verification/DatasetInfoApiVerification.sol";
 
+import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
+
 // Individual contribution of one user to the dataset
 struct DataContribution {
     bytes32 id;
@@ -30,7 +32,6 @@ contract FlareValidation {
     error AttestationAllreadyProcessed();
 
     mapping(bytes32 => DatasetInfo) public datasetInfo;
-    IDatasetInfoApiVerification public dbApiAttestationVerification;
 
     mapping(bytes32 => bool) public processedAttestations;
 
@@ -39,17 +40,20 @@ contract FlareValidation {
 
     mapping(address => uint256) public pendingPayouts; // contributor => payout
 
+    IDatasetInfoApiVerification internal dbApiAttestationVerification;
+    TestFtsoV2Interface internal ftsoV2;
+
     constructor() {
         dbApiAttestationVerification = new DatasetInfoApiVerification();
     }
 
-    function verifyTeeLearning(TeeHashInfo[] calldata contributionHashInfo) {
+    function verifyTeeLearning(TeeHashInfo[] calldata contributionHashInfo) external {
         for (uint256 i = 0; i < contributionHashInfo.length; i++) {
             verifiedContributions[contributionHashInfo[i].dataHash] = contributionHashInfo[i].contributor;
         }
     }
 
-    function addDatabaseInfo(IJsonApi.Response calldata jsonResponse) public {
+    function addDatabaseInfo(IJsonApi.Response calldata jsonResponse) external {
         // We mock the proof for testing and hackathon
         IJsonApi.Proof memory proof = IJsonApi.Proof({merkleProof: new bytes32[](0), data: jsonResponse});
         require(dbApiAttestationVerification.verifyJsonApi(proof), "Invalid proof");
@@ -77,7 +81,13 @@ contract FlareValidation {
         processedAttestations[_dbInfo.id] = true;
     }
 
-    function payout(address payable contributor) {
+    function getFlrUsdPrice() external view returns (uint256, int8, uint64) {
+        (uint256 feedValue, int8 decimals, uint64 timestamp) = ftsoV2.getFeedById(flrUsdId);
+
+        return (feedValue, decimals, timestamp);
+    }
+
+    function payout(address payable contributor) external {
         require(contributor != address(0), "invalid address");
 
         uint256 payoutAmount = pendingPayouts[contributor];

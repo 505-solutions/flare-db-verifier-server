@@ -48,6 +48,7 @@ interface DataContribution {
 // Dataset information (joint contributions of all users)
 interface DatasetInfo {
   id: string; // bytes32
+  dataHash: string; // bytes32
   dataContributions: DataContribution[];
 }
 
@@ -86,13 +87,16 @@ export class IDatasetInfoApiVerifierService extends BaseVerifierService<
       return result;
     }
 
-    console.log('dataset: ', dataContributions);
     const datasetInfo = this._processDatasetInfo(dataContributions);
 
     const abiSign = {
       components: [
         {
           name: 'id',
+          type: 'bytes32',
+        },
+        {
+          name: 'dataHash',
           type: 'bytes32',
         },
         {
@@ -133,7 +137,7 @@ export class IDatasetInfoApiVerifierService extends BaseVerifierService<
     const web3 = new Web3();
     const encodedResult = web3.eth.abi.encodeParameter(abiSign, datasetInfo);
 
-    console.log(encodedResult);
+    console.log('datasetInfo: ', datasetInfo);
 
     // construct correct data types
     const responseBodyParams: Required<IDatasetInfoApi_ResponseBody> = {
@@ -162,7 +166,8 @@ export class IDatasetInfoApiVerifierService extends BaseVerifierService<
   }
 
   protected _processDatasetInfo(dataset: ImageContribution[]) {
-    const datasetId = '0x' + Math.random().toString(16).substring(12);
+    const datasetId = this._getRandomHexString(64);
+    const dataHash = this._getRandomHexString(64);
 
     const dataContributions: DataContribution[] = [];
 
@@ -173,12 +178,11 @@ export class IDatasetInfoApiVerifierService extends BaseVerifierService<
       const contributionAmount = contribution.data.length;
       let variance = this._performPCA(contribution.data);
       variance = Math.floor(variance * 10 ** 8);
-      console.log(variance);
 
       // Note: This is just a random string
-      const dataHash = '0x' + Math.random().toString(16).substring(12);
+      const dataHash = this._getRandomHexString(64);
 
-      const contributionId = '0x' + Math.random().toString(16).substring(12);
+      const contributionId = this._getRandomHexString(64);
       const dataContribution: DataContribution = {
         id: contributionId,
         contributor,
@@ -193,6 +197,7 @@ export class IDatasetInfoApiVerifierService extends BaseVerifierService<
 
     const datasetInfo: DatasetInfo = {
       id: datasetId,
+      dataHash,
       dataContributions,
     };
 
@@ -203,8 +208,6 @@ export class IDatasetInfoApiVerifierService extends BaseVerifierService<
     datasetUrl: string,
     isLocal: boolean,
   ): Promise<ImageContribution[] | null> {
-    // console.log('Processing dataset info: ', dataset);
-
     if (isLocal) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -267,5 +270,11 @@ export class IDatasetInfoApiVerifierService extends BaseVerifierService<
     const aggVariances = variances.reduce((sum, val) => sum + val, 0);
 
     return aggVariances / variances.length;
+  }
+
+  _getRandomHexString(length: number) {
+    const hexString = Math.random().toString(16).substring(2, length);
+
+    return '0x' + hexString.padStart(64, '0');
   }
 }
