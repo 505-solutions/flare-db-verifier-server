@@ -12,8 +12,7 @@ const fetchData = async () => {
       '0x0000000000000000000000000000000000000000000000000000000000000000',
     requestBody: {
       url: 'https://api.freeapi.app/api/v1/public/randomusers/user/random',
-      abi_signature:
-        '{"struct DataContribution":{"id":"bytes32","contributor":"address","datasetId":"bytes32","dataHash":"bytes32","contributionAmount":"uint256","variance":"uint256"},"struct DatasetInfo":{"id":"bytes32","dataContributions":"DataContribution[]"}}',
+      abi_signature: '',
     },
   };
 

@@ -166,8 +166,8 @@ export class IDatasetInfoApiVerifierService extends BaseVerifierService<
   }
 
   protected _processDatasetInfo(dataset: ImageContribution[]) {
-    const datasetId = this._getRandomHexString(64);
-    const dataHash = this._getRandomHexString(64);
+    const datasetId = this._getRandomHexString(64, 33.3333);
+    const dataHash = this._getRandomHexString(64, 11.3212);
 
     const dataContributions: DataContribution[] = [];
 
@@ -180,9 +180,9 @@ export class IDatasetInfoApiVerifierService extends BaseVerifierService<
       variance = Math.floor(variance * 10 ** 8);
 
       // Note: This is just a random string
-      const dataHash = this._getRandomHexString(64);
+      const dataHash = this._getRandomHexString(64, 441.233 * (i + 1) ** 2);
 
-      const contributionId = this._getRandomHexString(64);
+      const contributionId = this._getRandomHexString(64, 77.77 * (i + 1) ** 2);
       const dataContribution: DataContribution = {
         id: contributionId,
         contributor,
@@ -272,8 +272,12 @@ export class IDatasetInfoApiVerifierService extends BaseVerifierService<
     return aggVariances / variances.length;
   }
 
-  _getRandomHexString(length: number) {
-    const hexString = Math.random().toString(16).substring(2, length);
+  _getRandomHexString(length: number, seed: number = 0): string {
+    // const hexString = Math.random().toString(16).substring(2, length);
+
+    let tmp = (Math.sin(seed) * 3) / 7;
+    tmp = tmp - Math.floor(tmp);
+    const hexString = tmp.toString(16).substring(2, length);
 
     return '0x' + hexString.padStart(64, '0');
   }
